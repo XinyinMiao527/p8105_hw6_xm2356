@@ -121,7 +121,7 @@ The plot shows substantial variation across cities in the adjusted odds of solvi
 
 # Problem 2
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 library(p8105.datasets)
 data("weather_df")
 library(modelr)
@@ -154,7 +154,7 @@ boot_results <-
 
 ```
 
-## the plot of r2
+## the plot of $\hat{r^2}$
 ```{r}
 boot_results |>
   ggplot(aes(x = r_sq)) +
@@ -167,6 +167,14 @@ boot_results |>
   theme_bw()
 
 ```
+
+The bootstrap distribution of $\hat{r^2}$ is approximately symmetric and bell-shaped, close to a normal distribution. 
+
+It is centered around roughly 0.94, indicating that the fitted model consistently explains about 94% of the variability in tmax across bootstrap samples and the linear association between tmax and the predictors (tmin, prcp) is consistently strong.
+
+It also shows moderate spread, with most values falling between 0.935 and 0.945. No extreme outliers—the tails taper smoothly on both ends.
+
+
 
 ## the plot of β1 / β2 
 ```{r}
@@ -181,6 +189,14 @@ boot_results |>
   theme_bw()
 ```
 
+The ratio $\frac{\hat{\beta_1}}{\hat{\beta_2}}$ compares the effect of minimum temperature relative to the effect of precipitation. 
+
+The distribution is left-skewed with a long tail extending toward more negative values.
+
+The ratio shows substantial variability, mainly because the precipitation coefficient is small and unstable across bootstrap samples.
+
+The long left tail (–300 to –400) indicates that small changes in the prcp coefficient can produce relatively large negative ratios.
+
 ## the 2.5% and 97.5% quantiles
 ```{r}
 boot_results |>
@@ -189,7 +205,8 @@ boot_results |>
     r2_upper      = quantile(r_sq, 0.975),
     ratio_lower   = quantile(beta_ratio, 0.025),
     ratio_upper   = quantile(beta_ratio, 0.975)
-  )
+  ) |> 
+  knitr::kable(digits = 4, caption = "95% Bootstrap Confidence Intervals")
 
 ```
 
