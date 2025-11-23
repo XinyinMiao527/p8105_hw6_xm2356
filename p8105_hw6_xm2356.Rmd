@@ -95,9 +95,29 @@ city_results |>
 
 ```
 
+## Plot
+```{r city-or-plot, fig.width=8, fig.height=7}
+city_results_plot <-
+  city_results |>
+  mutate(
+    city_state = forcats::fct_reorder(city_state, estimate)
+  )
 
+city_results_plot |>
+  ggplot(aes(x = estimate, y = city_state)) +
+  geom_point() +
+  geom_errorbar(aes(xmin = conf.low, xmax = conf.high), width = 0) +
+  geom_vline( xintercept = 1, linetype   = "dashed") +
+  labs(
+    x     = "Adjusted OR of solving homicide (male vs female victims)",
+    y     = "City",
+    title = "Adjusted odds ratios for male vs female victims by city"
+  ) +
+  theme_minimal()
 
+```
 
+The plot shows substantial variation across cities in the adjusted odds of solving homicides for male versus female victims. Although many cities have point estimates below 1—suggesting a tendency toward lower clearance odds for male victims—the confidence intervals for nearly all cities are wide and typically cross 1. Because this uncertainty is large, the apparent pattern is not statistically reliable, and we cannot confidently conclude that cases involving female victims are more likely to be solved.
 
 
 
