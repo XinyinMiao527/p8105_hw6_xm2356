@@ -1,0 +1,57 @@
+---
+title: "Homework 6"
+author: "Xinyin Miao (xm2356)"
+date: "2025-11-22"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(janitor)   
+library(broom)     
+library(purrr)  
+```
+
+# Problem 1
+
+```{r}
+homicides <- readr::read_csv("data/homicide-data.csv") |>
+  clean_names() |>
+  mutate(
+    city_state = str_c(city, ", ", state),
+    solved = if_else(disposition == "Closed by arrest", 1L, 0L),
+    victim_sex  = na_if(victim_sex,  "Unknown"),
+    victim_race = na_if(victim_race, "Unknown"),
+    victim_age = ifelse(victim_age %in% c("Unknown", ""), NA, victim_age),
+    victim_age = as.numeric(victim_age)
+    ) |>
+  filter(!city_state %in% c("Dallas, TX", "Phoenix, AZ", "Kansas City, MO", "Tulsa, AL"),
+         victim_race %in% c("White", "Black")
+         ) |>
+  mutate(
+    victim_sex  = factor(victim_sex,  levels = c("Female", "Male")),
+    victim_race = factor(victim_race, levels = c("White", "Black"))
+  )
+
+```
+
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
