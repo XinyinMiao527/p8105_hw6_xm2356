@@ -127,7 +127,7 @@ data("weather_df")
 library(modelr)
 ```
 
-## bootstrap fit
+## Bootstrap fit
 ```{r}
 set.seed(123)
 
@@ -154,7 +154,7 @@ boot_results <-
 
 ```
 
-## the plot of $\hat{r^2}$
+## The plot of $\hat{r^2}$
 ```{r}
 boot_results |>
   ggplot(aes(x = r_sq)) +
@@ -176,7 +176,7 @@ It also shows moderate spread, with most values falling between 0.935 and 0.945.
 
 
 
-## the plot of β1 / β2 
+## The plot of $\frac{\hat{\beta_1}}{\hat{\beta_2}}$ 
 ```{r}
 boot_results |>
   ggplot(aes(x = beta_ratio)) +
@@ -197,7 +197,7 @@ The ratio shows substantial variability, mainly because the precipitation coeffi
 
 The long left tail (–300 to –400) indicates that small changes in the prcp coefficient can produce relatively large negative ratios.
 
-## the 2.5% and 97.5% quantiles
+## The 2.5% and 97.5% quantiles
 ```{r}
 boot_results |>
   summarize(
@@ -216,7 +216,7 @@ boot_results |>
 set.seed(123)
 ```
 
-## data import and cleaning
+## Data import and cleaning
 
 ```{r}
 birthweight_raw <- read_csv("data/birthweight.csv") |>
@@ -246,7 +246,7 @@ filter(n_miss > 0)
 
 ```
 
-## model construction
+## Model construction
 
 ```{r}
 bw_model <- lm(bwt ~ babysex + bhead + blength + gaweeks +
@@ -265,7 +265,7 @@ The model included head circumference, birth length, gestational age, and sex. T
 Maternal factors:
 The model incorporated pre-pregnancy BMI and weight, pregnancy weight gain, smoking during pregnancy, and maternal race. These variables capture maternal nutritional status, health behaviors, and demographic differences that are known to affect intrauterine growth.
 
-## residual diagnostics
+## Residual diagnostics
 
 ```{r}
 birthweight_df |>
@@ -283,11 +283,76 @@ birthweight_df |>
 
 ```
 
-## 
+## Cross validation
+
+```{r}
+cv_df <- crossv_mc(birthweight_df, n = 100, test = 0.2) |>
+  mutate(
+    train = map(train, as_tibble),
+    test  = map(test,  as_tibble))
+
+cv_models <- cv_df |>
+mutate(
+  mod_prop= map(train, ~ lm(bwt ~ babysex + bhead + blength + gaweeks + ppbmi + ppwt + wtgain + smoken + mrace, data = .x)),
+  mod_1 = map(train, ~ lm(bwt ~ blength + gaweeks, data = .x)),
+  mod_2 = map(train, ~ lm(bwt ~ bhead * blength * babysex, data = .x)))
+
+```
 
 
+```{r}
+cv_results <- cv_models |>
+  mutate(
+    rmse_final = map2_dbl(mod_prop, test, rmse),
+    rmse_mod1  = map2_dbl(mod_1,    test, rmse),
+    rmse_mod2  = map2_dbl(mod_2,    test, rmse)) |>
+  select(starts_with("rmse_")) |>
+  pivot_longer(
+    everything(),
+    names_to = "model",
+    values_to = "rmse") |>
+  mutate(
+    model = recode(model,
+                   rmse_final = "Proposed model",
+                   rmse_mod1  = "Length + gestational age",
+                   rmse_mod2  = "Head*Length*Sex (all interactions)"))
 
+# summary statistics
 
+cv_results |> 
+  group_by(model) |>
+  summarise(
+    mean_rmse = mean(rmse),
+    sd_rmse   = sd(rmse)) |> 
+  arrange(mean_rmse)
+
+```
+
+Across 100 Monte Carlo cross-validation splits, the proposed model achieved the lowest prediction error. Its mean RMSE was approximately 273 g, compared with 288 g for the model containing all interactions among head circumference, length, and sex, and 331 g for the simple model using only birth length and gestational age.
+
+```{r}
+cv_results_sorted <- cv_results |>
+  mutate(model = forcats::fct_reorder(model, rmse, .fun = median))
+
+ggplot(cv_results_sorted, aes(x = model, y = rmse)) +
+  geom_boxplot() +
+  labs(
+  x = "Model",
+  y = "RMSE on test data",
+  title = "Cross-validated prediction error for three models"
+) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1))
+
+```
+
+The boxplots show the same pattern:
+
+Proposed model: lowest median RMSE, smallest variability.
+
+Interaction model: slightly higher error and greater spread, suggesting potential overfitting.
+
+Length + gestational age model: clearly the worst predictive performance, with both higher RMSE and much larger variability across splits.
 
 
 
