@@ -35,13 +35,65 @@ homicides <- readr::read_csv("data/homicide-data.csv") |>
 
 ```
 
-
+## For Baltimore,MD
 ```{r}
+baltimore <-
+  homicides |>
+  filter(city_state == "Baltimore, MD")
+
+baltimore_glm <-
+  glm(
+    solved ~ victim_age + victim_sex + victim_race,
+    data   = baltimore,
+    family = binomial()
+  )
 
 ```
 
+```{r}
+baltimore_results <-
+  baltimore_glm |>
+  tidy(
+    conf.int     = TRUE,
+    exponentiate = TRUE 
+  )
 
+baltimore_male_female_or <-
+  baltimore_results |>
+  filter(term == "victim_sexMale") |>
+  select(term, estimate, conf.low, conf.high)
 
+baltimore_male_female_or |> 
+  knitr::kable(digits = 4)
+
+# the estimate and CI of the adjusted odds ratio for solving homicides comparing male to female victims keeping all other variables fixed
+
+```
+
+## For each of the cities
+```{r}
+city_results <-
+  homicides |>
+  nest(data = -city_state) |>
+  mutate(
+    model = map(data, \(df) glm( solved ~ victim_age + victim_sex + victim_race,  data   = df, family = binomial())
+    ),
+    tidied = map(model, \(m) tidy(m,
+        conf.int     = TRUE,
+        exponentiate = TRUE
+      )
+    )
+  ) |>
+  select(city_state, tidied) |>
+  unnest(tidied) |>
+  filter(term == "victim_sexMale") |> 
+  select(city_state, estimate, conf.low, conf.high) |> 
+  arrange(desc(estimate))
+
+city_results |> 
+  knitr::kable(digits = 4)
+
+```
 
 
 
