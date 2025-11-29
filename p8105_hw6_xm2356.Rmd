@@ -1,7 +1,7 @@
 ---
 title: "Homework 6"
 author: "Xinyin Miao (xm2356)"
-date: "2025-11-22"
+date: "2025-11-29"
 output: github_document
 ---
 
